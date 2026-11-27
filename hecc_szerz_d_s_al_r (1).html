@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cigányszerződés</title>
+    
+    <!-- Tailwind CSS betöltése -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Elegáns talpas betűtípus a hivatalos hatáshoz + modern UI font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- html2canvas könyvtár a szerződés képként (PNG) történő letöltéséhez -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Font Awesome ikonok -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Egyedi betűtípusok és pergamen papír textúra */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 100%);
+        }
+
+        .font-legal-title {
+            font-family: 'Cinzel', serif;
+        }
+
+        .font-legal-body {
+            font-family: 'Crimson Text', serif;
+        }
+
+        /* Pergamen/oklevél papír hatás */
+        .parchment-paper {
+            background-color: #fdfbf7;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(214, 198, 168, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(214, 198, 168, 0.3) 0px, transparent 50%),
+                linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), inset 0 0 40px rgba(180, 155, 110, 0.2);
+            border: 1px solid #d6c7b2;
+        }
+
+        /* Szerkeszthető mezők stílusa */
+        .editable-field {
+            transition: all 0.2s ease;
+            border-bottom: 1.5px dashed #9ca3af;
+            background-color: rgba(245, 158, 11, 0.08);
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 60px;
+        }
+
+        .editable-field:focus {
+            outline: none;
+            border-bottom: 2px solid #b45309;
+            background-color: rgba(245, 158, 11, 0.18);
+        }
+
+        /* Zárolt (véglegesített) állapotú mezők */
+        .locked-field {
+            border-bottom: 1px solid transparent;
+            background-color: transparent;
+            padding: 0 2px;
+            font-weight: 600;
+        }
+
+        /* Aláíró pad (Canvas) konténer */
+        .signature-pad-wrapper {
+            touch-action: none; /* Megakadályozza az oldal görgetését aláírás közben mobilon */
+        }
+
+        /* Hivatalos piros pecsét animáció és kinézet */
+        @keyframes stampSlam {
+            0% {
+                opacity: 0;
+                transform: scale(3) rotate(-25deg);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(0.92) rotate(-12deg);
+            }
+            80% {
+                transform: scale(1.03) rotate(-14deg);
+            }
+            100% {
+                opacity: 0.9;
+                transform: scale(1) rotate(-13deg);
+            }
+        }
+
+        .official-stamp {
+            animation: stampSlam 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            border: 4px double #b91c1c;
+            color: #b91c1c;
+            box-shadow: inset 0 0 0 2px rgba(185, 28, 28, 0.3);
+            text-shadow: 0 0 1px rgba(185, 28, 28, 0.4);
+            mask-image: radial-gradient(circle, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0.75) 100%);
+        }
+
+        /* Rázkódás hibás jelszónál */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Nyomtatási nézet optimalizálása */
+        @media print {
+            body {
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .parchment-paper {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col items-center justify-center p-3 sm:p-6">
+
+    <!-- ===================================================================== -->
+    <!-- 1. JELSZAVAS VÉDELEM (BELÉPŐ KÉPERNYŐ)                                 -->
+    <!-- ===================================================================== -->
+    <div id="lock-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4">
+        <div id="login-card" class="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+            <div class="w-16 h-16 mx-auto mb-5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl shadow-inner">
+                <i class="fa-solid fa-user-secret"></i>
+            </div>
+            
+            <span class="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-widest uppercase rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                Cigányszerződés
+            </span>
+            
+            <h1 class="text-2xl font-bold text-white mb-2">Hozzáférés Korlátozva</h1>
+            <p class="text-slate-400 text-sm mb-6">
+                Gyorszerződés mindenhova
+            </p>
+
+            <form id="login-form" class="space-y-4">
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="password-input" 
+                        placeholder="Kód kell cigány..." 
+                        autocomplete="off"
+                        class="w-full px-4 py-3.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-center tracking-widest font-semibold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition"
+                    >
+                    <button type="button" id="toggle-pass-btn" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1" title="Jelszó mutatása/elrejtése">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+
+                <p id="error-msg" class="text-red-400 text-xs font-medium hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Szopó.
+                </p>
+
+                <button 
+                    type="submit" 
+                    class="w-full py-3.5 px-6 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-unlock-keyhole"></i>
+                    <span>Savale</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-800/80 text-[11px] text-slate-500 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-shield-halved text-slate-400"></i>
+                <span>Miafaszértbasztamezzelelidőt</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 2. FŐ ALKALMAZÁS (A SZERZŐDÉS ÉS VEZÉRLŐPULT)                          -->
+    <!-- ===================================================================== -->
+    <div id="main-app" class="hidden w-full max-w-4xl mx-auto flex-col gap-5 pb-12">
+        
+        <!-- Felső Vezérlősáv (Nem jelenik meg nyomtatáskor és a letöltött képen) -->
+        <div class="no-print bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <i class="fa-solid fa-file-signature"></i>
+                </div>
+                <div>
+                    <h2 class="text-white font-bold text-sm sm:text-base leading-tight">A</h2>
+                    <p id="mode-status-text" class="text-amber-400 text-xs font-medium">Szerkesztő mód aktív – kattints a kiemelt szövegekre!</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                <!-- Új szerződés / Sorszám léptetése gomb -->
+                <button 
+                    id="new-contract-btn" 
+                    type="button"
+                    title="Új szerződés indítása a következő sorszámmal"
+                    class="px-3.5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 transition flex items-center justify-center gap-1.5"
+                >
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>Új szerződés</span>
+                </button>
+
+                <!-- Szerkesztés / Zárolás váltógomb -->
+                <button 
+                    id="toggle-edit-btn" 
+                    type="button"
+                    class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Szöveg Zárolása</span>
+                </button>
+
+                <!-- Oldal újbóli lezárása jelszóval -->
+                <button 
+                    id="relock-screen-btn" 
+                    type="button"
+                    title="Képernyő lezárása jelszóval"
+                    class="px-3.5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-slate-800 hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-700 transition flex items-center justify-center gap-1.5"
+                >
+                    <i class="fa-solid fa-eye-slash"></i>
+                    <span class="hidden md:inline">Elrejtés</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Értesítési sáv (alert() helyett) -->
+        <div id="toast-banner" class="no-print hidden rounded-xl p-3.5 text-sm font-medium flex items-center justify-between shadow-lg transition-all">
+            <div class="flex items-center gap-2.5">
+                <i id="toast-icon" class="fa-solid fa-circle-info text-lg"></i>
+                <span id="toast-message">Üzenet szövege</span>
+            </div>
+            <button type="button" onclick="hideToast()" class="opacity-70 hover:opacity-100 p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- MAGA A PERGAMEN SZERZŐDÉS (EZ KERÜL MENTÉSRE KÉPKÉNT)             -->
+        <!-- ================================================================= -->
+        <div id="contract-capture-area" class="parchment-paper rounded-2xl p-6 sm:p-10 md:p-12 relative overflow-hidden text-slate-900">
+            
+            <!-- Díszes belső keret -->
+            <div class="border-2 border-amber-900/25 rounded-xl p-4 sm:p-8 relative">
+                
+                <!-- Iktatószám és fejléc -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-slate-600 font-mono border-b border-amber-900/20 pb-3 mb-6 gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span>IKTATÓSZÁM:</span>
+                        <strong id="doc-id" contenteditable="true" class="editable-field text-slate-900 font-bold tracking-wider">HSZ-2026/001-1127</strong>
+                        <button type="button" id="regen-id-btn" title="Új sorszám generálása" class="no-print text-amber-800 hover:text-amber-600 p-1 rounded transition">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                    <span>JOGHATÓSÁG: <strong class="text-slate-800">Vajda és cigánybiró</strong></span>
+                </div>
+
+                <!-- Szerződés Címe (Szerkeszthető) -->
+                <div class="text-center mb-8">
+                    <div class="inline-block text-amber-800/70 text-2xl mb-1">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <h1 
+                        id="contract-title" 
+                        contenteditable="true" 
+                        class="font-legal-title text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-wide text-slate-900 uppercase editable-field"
+                    >Very official szerződés</h1>
+                    <p class="font-legal-body italic text-slate-600 text-base mt-2">
+                        Készült teljes szellemi frissesség (vagy legalábbis annak látszata) mellett
+                    </p>
+                </div>
+
+                <!-- Szerződés Törzsszövege -->
+                <div class="font-legal-body text-lg sm:text-xl leading-relaxed space-y-5 text-slate-800">
+                    
+                    <p>
+                        Amely létrejött a mai napon, <strong id="intro-date-display" class="text-slate-950">2026. november 27.</strong> napján alulírott felek, egyrészről 
+                        <span id="party1-name" contenteditable="true" class="editable-field font-bold text-slate-950">Niga1</span> 
+                        (továbbiakban: <strong>1. Számú Fél / Kihívó</strong>), másrészről 
+                        <span id="party2-name" contenteditable="true" class="editable-field font-bold text-slate-950">Niga2</span> 
+                        (továbbiakban: <strong>2. Számú Fél / Elfogadó</strong>) között az alábbi, visszavonhatatlan és kifogásoktól mentes feltételekkel:
+                    </p>
+
+                    <div class="bg-amber-900/5 border-l-4 border-amber-800/60 p-4 rounded-r-lg space-y-2">
+                        <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider font-sans">1. § Fogadás Pontos Tárgya</h3>
+                        <p>
+                            A Felek büntetőjogi, erkölcsi felelősségük tudatában kijelentik, hogy az alábbi esemény bekövetkezésére vagy teljesítésére fogadnak:
+                            <br>
+                            <span id="bet-subject" contenteditable="true" class="editable-field font-semibold text-slate-950 mt-1 w-full">Fogadás tárgya</span>
+                        </p>
+                    </div>
+
+                    <div class="bg-amber-900/5 border-l-4 border-red-800/60 p-4 rounded-r-lg space-y-2">
+                        <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider font-sans">2. § A Tét és a Vesztes Kötelezettsége</h3>
+                        <p>
+                            Amennyiben a vállalás teljesül, a 2. Számú Fél veszít; GATTER  . FOGADÁSI TÉT:
+                            <br>
+                            <span id="bet-stakes" contenteditable="true" class="editable-field font-semibold text-red-900 mt-1 w-full">Tét leírás....</span>
+                        </p>
+                    </div>
+
+                    <p>
+                        <strong>3. § Teljesítési Határidő:</strong> A jelen szerződésben foglaltak teljesítésének végső határideje: 
+                        <span id="bet-deadline" contenteditable="true" class="editable-field font-bold text-slate-950">2026. december 27.</span>. 
+                        A határidő eredménytelen eltelte automatikus vereségnek minősül.
+                    </p>
+
+                    <p class="text-base text-slate-700 italic">
+                        <strong>4. § Záradék:</strong> A Felek kijelentik, hogy jelen okirat aláírását követően semmiféle „de hát rosszul értettem”, „nem is úgy gondoltam”, illetve „Amúgyse gondoltam komolyan” típusú kifogásnak helye nincs. A dokumentum digitális aláírással és bélyegzővel ellátva teljes bizonyító erővel bír.
+                    </p>
+
+                    <!-- Hivatalos Magyar Keltezés -->
+                    <div class="pt-3 text-base sm:text-lg border-t border-amber-900/15">
+                        Kelt: <strong id="formal-date-display" class="text-slate-950">2026. év november hó 27. napján</strong>, 
+                        <span id="bet-location" contenteditable="true" class="editable-field font-semibold">Hely.....</span>.
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- 3. DIGITÁLIS ALÁÍRÓ MEZŐK (CANVAS PADEK)                  -->
+                <!-- ========================================================= -->
+                <div class="mt-8 pt-6 border-t border-amber-900/20 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                    
+                    <!-- 1. Fél Aláírása -->
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-600">1. Számú Fél (Kihívó) Aláírása:</span>
+                            <button type="button" onclick="clearSignature(1)" class="no-print text-xs text-red-700 hover:text-red-900 font-semibold flex items-center gap-1 px-2 py-1 rounded hover:bg-red-900/10 transition">
+                                <i class="fa-solid fa-eraser"></i> Törlés
+                            </button>
+                        </div>
+                        <div class="signature-pad-wrapper relative w-full h-36 bg-white/80 border-2 border-dashed border-slate-400 rounded-xl overflow-hidden shadow-inner">
+                            <canvas id="sig-canvas-1" class="w-full h-full cursor-crosshair block"></canvas>
+                            <div id="sig-placeholder-1" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400/70 text-xs italic select-none">
+                                Írd ide alá ujjal vagy egérrel...
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center border-t border-slate-800 pt-1">
+                            <span id="sig-label-1" class="font-legal-body font-bold text-base text-slate-800">Niga1</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Fél Aláírása -->
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-600">2. Számú Fél (Elfogadó ) Aláírása:</span>
+                            <button type="button" onclick="clearSignature(2)" class="no-print text-xs text-red-700 hover:text-red-900 font-semibold flex items-center gap-1 px-2 py-1 rounded hover:bg-red-900/10 transition">
+                                <i class="fa-solid fa-eraser"></i> Törlés
+                            </button>
+                        </div>
+                        <div class="signature-pad-wrapper relative w-full h-36 bg-white/80 border-2 border-dashed border-slate-400 rounded-xl overflow-hidden shadow-inner">
+                            <canvas id="sig-canvas-2" class="w-full h-full cursor-crosshair block"></canvas>
+                            <div id="sig-placeholder-2" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400/70 text-xs italic select-none">
+                                Írd ide alá ujjal vagy egérrel...
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center border-t border-slate-800 pt-1">
+                            <span id="sig-label-2" class="font-legal-body font-bold text-base text-slate-800">Niga2</span>
+                        </div>
+                    </div>
+
+                    <!-- ===================================================== -->
+                    <!-- HIVATALOS PIROS PECSÉT (ALAPÉRTELMEZETTEN REJTETT)      -->
+                    <!-- ===================================================== -->
+                    <div id="official-stamp-box" class="hidden pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                        <div class="official-stamp px-5 py-3 rounded-xl bg-red-50/25 backdrop-blur-[1px] text-center select-none whitespace-nowrap">
+                            <div class="text-[10px] font-bold tracking-[0.2em] uppercase">HITELESÍTVE • CIGÁNY VAJDA</div>
+                            <div id="stamp-doc-id" class="text-sm sm:text-base font-mono font-extrabold tracking-wider uppercase my-0.5">HSZ-2026/001-1127</div>
+                            <div id="stamp-timestamp" class="text-[11px] font-mono font-bold">2026.11.27. 20:20</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- 4. VÉGLEGESÍTÉS ÉS LETÖLTÉS GOMBOK                                -->
+        <!-- ================================================================= -->
+        <div class="no-print bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Hitelesítés gomb -->
+            <button 
+                id="certify-btn" 
+                type="button"
+                class="w-full sm:w-auto flex-1 py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 shadow-lg shadow-red-600/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2.5 text-sm sm:text-base"
+            >
+                <i class="fa-solid fa-stamp text-lg"></i>
+                <span>Szerződés Hitelesítése és Aláírása</span>
+            </button>
+
+            <!-- Mentés opciók -->
+            <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                <button 
+                    id="download-png-btn" 
+                    type="button"
+                    class="flex-1 sm:flex-none py-3.5 px-5 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 shadow-lg shadow-emerald-500/20 transition transform active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                    <i class="fa-solid fa-image"></i>
+                    <span>Mentés Képként (PNG)</span>
+                </button>
+
+                <button 
+                    type="button"
+                    onclick="window.print()"
+                    title="Nyomtatás vagy mentés PDF-ként"
+                    class="py-3.5 px-4 rounded-xl font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-600 transition flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden md:inline">PDF / Nyomtatás</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT LOGIKA                                                     -->
+    <!-- ===================================================================== -->
+    <script>
+        /**
+         * ====================================================================
+         * BIZTONSÁGI BEÁLLÍTÁS - ITT ÍRHATOD ÁT A JELSZÓT!
+         * ====================================================================
+         * FIGYELEM: Mivel ez egy egyfájlos, kliensoldali (böngészőben futó) HTML 
+         * oldal, a jelszó ellenőrzése a felhasználó böngészőjében történik. 
+         * Baráti hecchez és kíváncsiskodók távoltartásához tökéletes, de ha 
+         * ingyenes tárhelyre (pl. GitHub Pages, Netlify) töltöd fel, ne tárolj 
+         * benne valódi bankkártyaadatokat vagy államtitkokat!
+         */
+        const SECRET_PASSWORD = "cigger";
+
+        // Globális állapotok
+        let isEditMode = true;
+        let isCertified = false;
+        const STORAGE_COUNTER_KEY = 'hecc_contract_seq_counter';
+        const STORAGE_CURRENT_ID_KEY = 'hecc_contract_current_id';
+
+        const signatures = {
+            1: { canvas: null, ctx: null, isDrawing: false, hasDrawn: false },
+            2: { canvas: null, ctx: null, isDrawing: false, hasDrawn: false }
+        };
+
+        // Oldal betöltésekor inicializálás
+        window.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+            initContractMetadata();
+            initEditToggle();
+            initSignaturePads();
+            initActions();
+        });
+
+        /* --------------------------------------------------------------------
+         * 1. JELSZAVAS VÉDELEM KEZELÉSE
+         * -------------------------------------------------------------------- */
+        function initAuth() {
+            const lockScreen = document.getElementById('lock-screen');
+            const mainApp = document.getElementById('main-app');
+            const loginForm = document.getElementById('login-form');
+            const loginCard = document.getElementById('login-card');
+            const passwordInput = document.getElementById('password-input');
+            const errorMsg = document.getElementById('error-msg');
+            const togglePassBtn = document.getElementById('toggle-pass-btn');
+            const relockBtn = document.getElementById('relock-screen-btn');
+
+            // Jelszó megjelenítése / elrejtése szem ikonnal
+            togglePassBtn.addEventListener('click', () => {
+                const isPass = passwordInput.type === 'password';
+                passwordInput.type = isPass ? 'text' : 'password';
+                togglePassBtn.innerHTML = isPass 
+                    ? '<i class="fa-regular fa-eye-slash"></i>' 
+                    : '<i class="fa-regular fa-eye"></i>';
+            });
+
+            // Belépés ellenőrzése
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const entered = passwordInput.value.trim();
+
+                if (entered === SECRET_PASSWORD) {
+                    errorMsg.classList.add('hidden');
+                    lockScreen.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    mainApp.classList.add('flex');
+                    
+                    // Canvas méretek újraszámolása, miután láthatóvá vált a konténer
+                    resizeAllCanvases();
+                } else {
+                    errorMsg.classList.remove('hidden');
+                    loginCard.classList.remove('animate-shake');
+                    void loginCard.offsetWidth; // Reflow kényszerítése az animáció újraindításához
+                    loginCard.classList.add('animate-shake');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            });
+
+            // Oldal újbóli lezárása (pl. ha jön valaki)
+            relockBtn.addEventListener('click', () => {
+                passwordInput.value = '';
+                mainApp.classList.add('hidden');
+                mainApp.classList.remove('flex');
+                lockScreen.classList.remove('hidden');
+                passwordInput.focus();
+            });
+        }
+
+        /* --------------------------------------------------------------------
+         * 2. AUTOMATIKUS MAGYAR DÁTUMOZÁS ÉS LÉPTETHETŐ SORSZÁMOZÁS
+         * -------------------------------------------------------------------- */
+        function generateSerialNumber(increment = false) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+
+            // Sorszám lekérése és léptetése localStorage-ból
+            let seq = parseInt(localStorage.getItem(STORAGE_COUNTER_KEY) || '1', 10);
+            if (isNaN(seq) || seq < 1) seq = 1;
+
+            if (increment) {
+                seq += 1;
+            }
+            localStorage.setItem(STORAGE_COUNTER_KEY, String(seq));
+
+            const paddedSeq = String(seq).padStart(3, '0');
+            const randomSuffix = Math.floor(100 + Math.random() * 899);
+            const newId = `HSZ-${year}/${paddedSeq}-${month}${day}-${randomSuffix}`;
+            
+            localStorage.setItem(STORAGE_CURRENT_ID_KEY, newId);
+            return newId;
+        }
+
+        function updateAllDates() {
+            const now = new Date();
+            const hungarianMonths = [
+                'január', 'február', 'március', 'április', 'május', 'június',
+                'július', 'augusztus', 'szeptember', 'október', 'november', 'december'
+            ];
+
+            const year = now.getFullYear();
+            const monthName = hungarianMonths[now.getMonth()];
+            const day = now.getDate();
+
+            // 1. Bevezető dátum (pl. 2026. november 27.)
+            document.getElementById('intro-date-display').textContent = `${year}. ${monthName} ${day}.`;
+
+            // 2. Hivatalos keltezés (pl. 2026. év november hó 27. napján)
+            document.getElementById('formal-date-display').textContent = `${year}. év ${monthName} hó ${day}. napján`;
+
+            // 3. Alapértelmezett határidő (+1 hónap)
+            const deadlineDate = new Date(now);
+            deadlineDate.setMonth(deadlineDate.getMonth() + 1);
+            const dYear = deadlineDate.getFullYear();
+            const dMonthName = hungarianMonths[deadlineDate.getMonth()];
+            const dDay = deadlineDate.getDate();
+            document.getElementById('bet-deadline').textContent = `${dYear}. ${dMonthName} ${dDay}.`;
+        }
+
+        function initContractMetadata() {
+            updateAllDates();
+
+            // Iktatószám betöltése localStorage-ból vagy új generálása
+            const docIdEl = document.getElementById('doc-id');
+            let savedId = localStorage.getItem(STORAGE_CURRENT_ID_KEY);
+            if (!savedId) {
+                savedId = generateSerialNumber(false);
+            }
+            docIdEl.textContent = savedId;
+
+            // Manuális iktatószám szerkesztés mentése
+            docIdEl.addEventListener('input', () => {
+                localStorage.setItem(STORAGE_CURRENT_ID_KEY, docIdEl.textContent.trim());
+            });
+
+            // Új sorszám generálása gomb (kis frissítés ikon az iktatószám mellett)
+            document.getElementById('regen-id-btn').addEventListener('click', () => {
+                if (isCertified) {
+                    showToast('Hitelesített szerződés iktatószáma már nem módosítható!', 'warning');
+                    return;
+                }
+                const nextId = generateSerialNumber(true);
+                docIdEl.textContent = nextId;
+                showToast(`Új iktatószám generálva: ${nextId}`, 'info');
+            });
+
+            // Felek nevének élő frissítése az aláíró vonalak alatt
+            const p1Input = document.getElementById('party1-name');
+            const p2Input = document.getElementById('party2-name');
+            const p1Label = document.getElementById('sig-label-1');
+            const p2Label = document.getElementById('sig-label-2');
+
+            p1Input.addEventListener('input', () => {
+                p1Label.textContent = p1Input.textContent.trim() || '1. Számú Fél';
+            });
+
+            p2Input.addEventListener('input', () => {
+                p2Label.textContent = p2Input.textContent.trim() || '2. Számú Fél';
+            });
+        }
+
+        /* --------------------------------------------------------------------
+         * 3. SZERKESZTŐ / ZÁROLÁS MÓD KAPCSOLÓ
+         * -------------------------------------------------------------------- */
+        function initEditToggle() {
+            const toggleBtn = document.getElementById('toggle-edit-btn');
+            const statusText = document.getElementById('mode-status-text');
+            const editableElements = document.querySelectorAll('[contenteditable]');
+
+            toggleBtn.addEventListener('click', () => {
+                if (isCertified) {
+                    showToast('A szerződés már hitelesítve van, nem módosítható!', 'warning');
+                    return;
+                }
+
+                isEditMode = !isEditMode;
+
+                editableElements.forEach(el => {
+                    el.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+                    if (isEditMode) {
+                        el.classList.add('editable-field');
+                        el.classList.remove('locked-field');
+                    } else {
+                        el.classList.remove('editable-field');
+                        el.classList.add('locked-field');
+                    }
+                });
+
+                if (isEditMode) {
+                    toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Szöveg Zárolása</span>';
+                    toggleBtn.classList.replace('text-emerald-400', 'text-amber-400');
+                    statusText.textContent = 'Szerkesztő mód aktív – kattints a kiemelt szövegekre!';
+                    statusText.classList.replace('text-emerald-400', 'text-amber-400');
+                } else {
+                    toggleBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i><span>Szerkesztés Feloldása</span>';
+                    toggleBtn.classList.replace('text-amber-400', 'text-emerald-400');
+                    statusText.textContent = 'Szöveg véglegesítve – készen áll az aláírásra!';
+                    statusText.classList.replace('text-amber-400', 'text-emerald-400');
+                }
+            });
+        }
+
+        /* --------------------------------------------------------------------
+         * 4. DIGITÁLIS ALÁÍRÓ PAD (EGÉR ÉS ÉRINTŐKÉPERNYŐ TÁMOGATÁS)
+         * -------------------------------------------------------------------- */
+        function initSignaturePads() {
+            [1, 2].forEach(id => {
+                const canvas = document.getElementById(`sig-canvas-${id}`);
+                const ctx = canvas.getContext('2d');
+                signatures[id].canvas = canvas;
+                signatures[id].ctx = ctx;
+
+                // Egér események
+                canvas.addEventListener('mousedown', (e) => startDrawing(id, e));
+                canvas.addEventListener('mousemove', (e) => draw(id, e));
+                window.addEventListener('mouseup', () => stopDrawing(id));
+
+                // Érintőképernyő (mobil/tablet) események
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startDrawing(id, e.touches[0]);
+                }, { passive: false });
+
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    draw(id, e.touches[0]);
+                }, { passive: false });
+
+                canvas.addEventListener('touchend', () => stopDrawing(id));
+            });
+
+            // Ablak átméretezésekor a canvas felbontásának igazítása
+            window.addEventListener('resize', resizeAllCanvases);
+        }
+
+        function resizeAllCanvases() {
+            [1, 2].forEach(id => {
+                const { canvas, ctx } = signatures[id];
+                if (!canvas) return;
+                
+                // Mentjük a jelenlegi rajzot átméretezés előtt
+                const tempImage = canvas.toDataURL();
+                const rect = canvas.parentElement.getBoundingClientRect();
+                
+                // Retina/HiDPI kijelzők támogatása az éles aláíráshoz
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+
+                // Tinta stílusa (sötétkék golyóstoll hatás)
+                ctx.strokeStyle = '#0f296e';
+                ctx.lineWidth = 2.6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Ha már volt rajta aláírás, visszatöltjük
+                if (signatures[id].hasDrawn) {
+                    const img = new Image();
+                    img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+                    img.src = tempImage;
+                }
+            });
+        }
+
+        function getCoordinates(canvas, event) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+
+        function startDrawing(id, event) {
+            if (isCertified) return; // Hitelesítés után már nem lehet firkálni
+            const sig = signatures[id];
+            sig.isDrawing = true;
+            sig.hasDrawn = true;
+
+            // Segédszöveg elrejtése
+            document.getElementById(`sig-placeholder-${id}`).classList.add('hidden');
+
+            const coords = getCoordinates(sig.canvas, event);
+            sig.ctx.beginPath();
+            sig.ctx.moveTo(coords.x, coords.y);
+        }
+
+        function draw(id, event) {
+            const sig = signatures[id];
+            if (!sig.isDrawing || isCertified) return;
+
+            const coords = getCoordinates(sig.canvas, event);
+            sig.ctx.lineTo(coords.x, coords.y);
+            sig.ctx.stroke();
+        }
+
+        function stopDrawing(id) {
+            signatures[id].isDrawing = false;
+        }
+
+        function clearSignature(id) {
+            if (isCertified) {
+                showToast('Hitelesített szerződésről az aláírás már nem törölhető!', 'warning');
+                return;
+            }
+            const sig = signatures[id];
+            const rect = sig.canvas.parentElement.getBoundingClientRect();
+            sig.ctx.clearRect(0, 0, rect.width, rect.height);
+            sig.hasDrawn = false;
+            document.getElementById(`sig-placeholder-${id}`).classList.remove('hidden');
+        }
+
+        /* --------------------------------------------------------------------
+         * 5. HITELESÍTÉS (PECSÉT), ÚJ SZERZŐDÉS ÉS MENTÉS KÉPKÉNT (PNG)
+         * -------------------------------------------------------------------- */
+        function initActions() {
+            const certifyBtn = document.getElementById('certify-btn');
+            const downloadPngBtn = document.getElementById('download-png-btn');
+            const newContractBtn = document.getElementById('new-contract-btn');
+
+            // Új szerződés indítása (sorszám léptetése + alaphelyzet)
+            newContractBtn.addEventListener('click', () => {
+                isCertified = false;
+
+                // Sorszám léptetése és dátumok frissítése
+                const nextId = generateSerialNumber(true);
+                document.getElementById('doc-id').textContent = nextId;
+                updateAllDates();
+
+                // Pecsét elrejtése
+                document.getElementById('official-stamp-box').classList.add('hidden');
+
+                // Aláírások törlése
+                [1, 2].forEach(id => {
+                    const sig = signatures[id];
+                    const rect = sig.canvas.parentElement.getBoundingClientRect();
+                    sig.ctx.clearRect(0, 0, rect.width, rect.height);
+                    sig.hasDrawn = false;
+                    document.getElementById(`sig-placeholder-${id}`).classList.remove('hidden');
+                });
+
+                // Szerkesztő mód visszaállítása
+                if (!isEditMode) {
+                    document.getElementById('toggle-edit-btn').click();
+                }
+
+                // Hitelesítés gomb visszaállítása
+                certifyBtn.innerHTML = '<i class="fa-solid fa-stamp text-lg"></i><span>Szerződés Hitelesítése és Aláírása</span>';
+                certifyBtn.classList.remove('from-slate-700', 'to-slate-600');
+                certifyBtn.classList.add('from-red-700', 'to-red-600');
+                document.getElementById('mode-status-text').textContent = 'Szerkesztő mód aktív – kattints a kiemelt szövegekre!';
+
+                showToast(`Új szerződés előkészítve (${nextId})!`, 'success');
+            });
+
+            // Szerződés hitelesítése
+            certifyBtn.addEventListener('click', () => {
+                if (isCertified) {
+                    showToast('Ez a szerződés már hivatalosan hitelesítve lett!', 'info');
+                    return;
+                }
+
+                // Ellenőrizzük, hogy mindkét fél aláírta-e
+                if (!signatures[1].hasDrawn || !signatures[2].hasDrawn) {
+                    showToast('Mindkét fél digitális aláírása szükséges a hitelesítéshez!', 'error');
+                    return;
+                }
+
+                // Ha még szerkesztő módban volt, automatikusan zároljuk a szöveget
+                if (isEditMode) {
+                    document.getElementById('toggle-edit-btn').click();
+                }
+
+                isCertified = true;
+
+                // Aktuális iktatószám és pontos időbélyeg ráírása a pecsétre
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                
+                const currentDocId = document.getElementById('doc-id').textContent.trim();
+                document.getElementById('stamp-doc-id').textContent = currentDocId;
+                document.getElementById('stamp-timestamp').textContent = `${year}.${month}.${day}. ${hours}:${minutes}`;
+
+                // Piros pecsét megjelenítése animációval
+                const stampBox = document.getElementById('official-stamp-box');
+                stampBox.classList.remove('hidden');
+
+                // Gomb állapotának frissítése
+                certifyBtn.innerHTML = '<i class="fa-solid fa-circle-check text-lg"></i><span>Hivatalosan Hitelesítve</span>';
+                certifyBtn.classList.replace('from-red-700', 'from-slate-700');
+                certifyBtn.classList.replace('to-red-600', 'to-slate-600');
+                
+                document.getElementById('mode-status-text').textContent = 'DOKUMENTUM LEZÁRVA ÉS HITELESÍTVE';
+                showToast('A szerződés hitelesítve! Most már letöltheted képként és elküldheted a haverodnak.', 'success');
+            });
+
+            // Letöltés PNG képként (html2canvas)
+            downloadPngBtn.addEventListener('click', async () => {
+                const originalContent = downloadPngBtn.innerHTML;
+                downloadPngBtn.disabled = true;
+                downloadPngBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Kép generálása...</span>';
+
+                // Ideiglenesen elrejtjük a "Törlés" és sorszám-frissítő gombokat a szerződésről
+                const noPrintElements = document.querySelectorAll('#contract-capture-area .no-print');
+                noPrintElements.forEach(el => el.style.visibility = 'hidden');
+
+                try {
+                    const captureArea = document.getElementById('contract-capture-area');
+                    const canvas = await html2canvas(captureArea, {
+                        scale: 2, // Magas felbontás a tűéles szövegért
+                        useCORS: true,
+                        backgroundColor: '#fdfbf7'
+                    });
+
+                    // Kép letöltésének indítása az iktatószámmal a fájlnévben
+                    const link = document.createElement('a');
+                    const docId = document.getElementById('doc-id').textContent.trim().replace(/[^a-zA-Z0-9-]/g, '_');
+                    link.download = `Hecc_Szerzodes_${docId}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+
+                    showToast(`A szerződés letöltve (${link.download})!`, 'success');
+                } catch (err) {
+                    console.error('Hiba a kép generálásakor:', err);
+                    showToast('Hiba történt a kép mentésekor. Próbáld a PDF / Nyomtatás gombot!', 'error');
+                } finally {
+                    // Visszaállítjuk a gombok láthatóságát
+                    noPrintElements.forEach(el => el.style.visibility = 'visible');
+                    downloadPngBtn.disabled = false;
+                    downloadPngBtn.innerHTML = originalContent;
+                }
+            });
+        }
+
+        /* --------------------------------------------------------------------
+         * 6. ÉRTESÍTŐ SÁV KEZELÉSE (ALERT HELYETT)
+         * -------------------------------------------------------------------- */
+        let toastTimeout;
+        function showToast(message, type = 'info') {
+            const banner = document.getElementById('toast-banner');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            banner.className = 'no-print rounded-xl p-3.5 text-sm font-medium flex items-center justify-between shadow-lg transition-all border';
+            
+            if (type === 'error' || type === 'warning') {
+                banner.classList.add('bg-red-950/90', 'text-red-200', 'border-red-700/70');
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-red-400 text-lg';
+            } else if (type === 'success') {
+                banner.classList.add('bg-emerald-950/90', 'text-emerald-200', 'border-emerald-700/70');
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else {
+                banner.classList.add('bg-slate-800', 'text-slate-200', 'border-slate-600');
+                iconEl.className = 'fa-solid fa-circle-info text-amber-400 text-lg';
+            }
+
+            msgEl.textContent = message;
+            banner.classList.remove('hidden');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(hideToast, 5000);
+        }
+
+        function hideToast() {
+            document.getElementById('toast-banner').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
